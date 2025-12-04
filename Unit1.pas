@@ -11,8 +11,12 @@ type
     Timer1: TTimer;
     Image1: TImage;
     procedure Timer1Timer(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
+    X, Y : Integer;
+    fOffScreen: TBitmap; // “back buffer”
   public
     { Public declarations }
   end;
@@ -24,12 +28,36 @@ implementation
 
 {$R *.dfm}
 
-procedure TForm1.Timer1Timer(Sender: TObject);
-var X, Y : Integer;
+procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  Canvas.Brush.Color := clWhite;
-  Canvas.FillRect(Canvas.ClipRect);
-  Canvas.Draw(X, Y, Image1.Picture.Graphic);
+   FreeAndNil(fOffScreen); // destruíndo o "back buffer"
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  // criando o "back buffer"
+  X := 0;
+  Y := 0;
+  fOffScreen := TBitmap.Create;
+  fOffScreen.PixelFormat := pf24bit;
+  fOffScreen.Width := ClientWidth;
+  fOffScreen.Height := ClientHeight;
+end;
+
+procedure TForm1.Timer1Timer(Sender: TObject);
+begin
+  // primeiro desenhando na memória, para depois transferir para a "área visível" da tela
+  // com isso, o efeito "flickering" (imagem piscante) é minimizado
+  fOffScreen.Canvas.Brush.Color := clWhite;
+  fOffScreen.Canvas.FillRect(fOffScreen.Canvas.ClipRect);
+  fOffScreen.Canvas.Draw(X, Y, Image1.Picture.Graphic);
+
+  BitBlt(Canvas.Handle, 0, 0,
+         ClientWidth,
+         ClientHeight,
+         fOffScreen.Canvas.Handle,
+         0, 0, SRCCOPY);
+
   Inc(X);
   Inc(Y);
   if X >= ClientWidth - Image1.Width then
