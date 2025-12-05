@@ -15,14 +15,16 @@ type
     procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
-    X, Y : Integer;
-    fOffScreen: TBitmap; // “back buffer”
+    // Trata a mensagem do Windows que forçaria o redesenho da janela pelo Delphi
+    procedure WMEraseBg(var Msg: TWMEraseBkgnd); message WM_ERASEBKGND;
   public
     { Public declarations }
   end;
 
 var
   Form1: TForm1;
+  X, Y : Integer;
+  fOffScreen: TBitmap; // “back buffer”
 
 implementation
 
@@ -64,6 +66,11 @@ begin
      X := 0;
   if Y >= ClientHeight - Image1.Height then
      Y := 0;
+end;
+
+procedure TForm1.WMEraseBg(var Msg: TWMEraseBkgnd);
+begin
+   Msg.Result:= 0; // Informa ao Windows que o próprio programa tratará do redesenho da janela
 end;
 
 end.
